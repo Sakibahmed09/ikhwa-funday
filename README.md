@@ -13,7 +13,7 @@ Then open http://localhost:5081
 
 ## Reusing it for another event
 
-Edit `event.config.js`. Nothing else. That file holds the name, date, venue,
+Edit `details.js`. Nothing else. That file holds the name, date, venue,
 price, what's on, the payment link, and which form fields to show. Drop the new
 poster in `assets/` and point `poster` at it.
 
@@ -25,7 +25,7 @@ see them. To get them into a sheet:
 1. Make a new Google Sheet.
 2. Extensions > Apps Script. Delete what's there, paste in `sheet-backend.gs`.
 3. Deploy > New deployment > Web app. Execute as: me. Who has access: anyone.
-4. Copy the `/exec` URL it gives you into `sheetEndpoint` in `event.config.js`.
+4. Copy the `/exec` URL it gives you into `sheetEndpoint` in `details.js`.
 
 Each booking writes one row. When someone taps "I've paid", the same row
 updates rather than adding a second one.
