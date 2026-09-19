@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Active Family Fun Day — IKHWA UK</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="wrap">
+  <div class="eyebrow" id="org"></div>
+  <h1 id="ev-name"></h1>
+  <p class="tagline" id="tagline"></p>
+</header>
+
+<div class="wrap">
+  <div class="facts">
+    <div class="fact"><div class="k">Date</div><div class="v" id="f-date"></div><div class="s" id="f-time"></div></div>
+    <div class="fact"><div class="k">Where</div><div class="v" id="f-venue"></div><div class="s" id="f-venue2"></div></div>
+    <div class="fact"><div class="k">Entry</div><div class="v" id="f-price"></div><div class="s" id="f-pricenote"></div></div>
+  </div>
+
+  <div class="cols">
+
+    <div class="poster-card">
+      <img class="poster" id="poster" alt="Event poster">
+      <ul class="highlights" id="highlights"></ul>
+    </div>
+
+    <div class="card" id="booking">
+
+      <div class="track" id="track">
+        <span class="dot on" id="dot1"><i></i>Your details</span>
+        <span class="bar"></span>
+        <span class="dot" id="dot2"><i></i>Pay</span>
+      </div>
+
+      <section id="step-form">
+        <h2>Book your place</h2>
+        <p class="sub" id="form-sub"></p>
+
+        <form id="reg" novalidate>
+          <div class="field" id="w-name">
+            <label for="name">Your name</label>
+            <input id="name" name="name" autocomplete="name" placeholder="e.g. Yamin Ali">
+            <div class="msg">Please type your name.</div>
+          </div>
+
+          <div class="field" id="w-email">
+            <label for="email">Email address</label>
+            <div class="hint">In case we need to get hold of you about your booking.</div>
+            <input id="email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com">
+            <div class="msg">That email doesn't look right. It needs an @ in it.</div>
+          </div>
+
+          <div class="field" id="w-phone">
+            <label for="phone">Mobile number</label>
+            <div class="hint">In case we need to reach you on the day.</div>
+            <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="07123 456789">
+            <div class="msg">That number looks too short. Please check it.</div>
+          </div>
+
+          <div class="field" id="w-tickets">
+            <label for="tickets">How many people are coming?</label>
+            <div class="stepper">
+              <button type="button" id="minus" aria-label="One fewer person">−</button>
+              <input id="tickets" inputmode="numeric" value="1" aria-label="Number of people">
+              <button type="button" id="plus" aria-label="One more person">+</button>
+            </div>
+            <div class="msg">Please choose at least one person.</div>
+          </div>
+
+          <div class="field" id="w-heard">
+            <label for="heard">Where did you hear about this? <span class="opt">Optional</span></label>
+            <select id="heard"><option value="">Choose one…</option></select>
+          </div>
+
+          <div class="total">
+            <span class="lbl"><span id="t-count"></span> × <span id="t-each"></span></span>
+            <span class="amt" id="t-total"></span>
+          </div>
+
+          <button class="primary" type="submit" id="submit">Continue</button>
+          <p class="fineprint">We'll only use your details for this event and future IKHWA events.</p>
+        </form>
+      </section>
+
+      <section id="step-pay" class="hidden">
+        <h2>Last step: pay</h2>
+        <p class="sub">Send a bank transfer from your banking app. Your place is held until then.</p>
+
+        <div class="paybox">
+          <div class="payrow big">
+            <span>Amount to send</span>
+            <strong id="p-amount"></strong>
+          </div>
+          <div class="payrow">
+            <span>Account name</span>
+            <strong id="b-name"></strong>
+            <button type="button" class="copy" data-copy="b-name">Copy</button>
+          </div>
+          <div class="payrow">
+            <span>Bank</span>
+            <strong id="b-bank"></strong>
+          </div>
+          <div class="payrow">
+            <span>Sort code</span>
+            <strong id="b-sort"></strong>
+            <button type="button" class="copy" data-copy="b-sort">Copy</button>
+          </div>
+          <div class="payrow">
+            <span>Account number</span>
+            <strong id="b-acc"></strong>
+            <button type="button" class="copy" data-copy="b-acc">Copy</button>
+          </div>
+          <div class="payrow ref-row">
+            <span>Reference<em>This is how we find your booking</em></span>
+            <strong id="p-ref"></strong>
+            <button type="button" class="copy" data-copy="p-ref">Copy</button>
+          </div>
+        </div>
+
+        <ol class="steps">
+          <li><strong>Open your banking app</strong>Make a normal payment to a new person or business.</li>
+          <li><strong>Use the details above</strong>Copy them across one by one.</li>
+          <li><strong>Put <span class="ref" id="p-ref2"></span> in the reference box</strong>Your app might call it "reference", "payment reference" or "what's this for". Without it we can't tell whose money is whose.</li>
+          <li><strong>Come back and tap "I've sent it"</strong>That's it, you're done.</li>
+        </ol>
+
+        <button class="primary" id="paid">I've sent it</button>
+        <button class="link" id="back">Go back and change my details</button>
+      </section>
+
+      <section id="step-done" class="hidden done">
+        <div class="done-mark">✓</div>
+        <h2>Booking secured</h2>
+        <p class="sub" id="d-line"></p>
+
+        <div class="ticket">
+          <div class="ticket-top">
+            <span>Your booking code</span>
+            <strong id="d-ref"></strong>
+          </div>
+          <div class="perf"><i></i><i></i></div>
+          <div class="ticket-body">
+            <div class="trow"><span>Name</span><strong id="d-name"></strong></div>
+            <div class="trow"><span>Going</span><strong id="d-people"></strong></div>
+            <div class="trow"><span>Paid</span><strong id="d-amount"></strong></div>
+            <div class="trow"><span>When</span><strong id="d-when"></strong></div>
+            <div class="trow"><span>Where</span><strong id="d-where"></strong></div>
+          </div>
+        </div>
+
+        <p class="shot">This is your ticket. Screenshot it.</p>
+
+        <ul class="next" id="next"></ul>
+
+        <button class="ghost" id="another">Book another family</button>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<footer class="wrap">
+  <div id="links"></div>
+</footer>
+
+<script src="event.config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
