@@ -30,6 +30,8 @@ window.EVENT = {
     "Prizes to be won",
   ],
 
+  stripeLink: "https://buy.stripe.com/14A3cxex9bV2cTM80t4ko00",
+
   bank: {
     accountName: "ONE FOUNDATION EAST CIC",
     bankName: "The Co-operative Bank",

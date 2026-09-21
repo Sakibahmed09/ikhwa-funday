@@ -468,3 +468,23 @@ button.link:hover { color: var(--teal-deep); }
   .payrow.big strong { font-size: 34px; }
   .trow { gap: 12px; }
 }
+
+/* ---------- bank transfer fallback ---------- */
+
+.alt {
+  margin-top: 22px;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+.alt summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--teal-deep);
+  list-style: none;
+  text-align: center;
+}
+.alt summary::-webkit-details-marker { display: none; }
+.alt summary::after { content: " ↓"; }
+.alt[open] summary::after { content: " ↑"; }
+.alt-note { font-size: 13px; color: var(--ink-soft); margin: 0 0 4px; }

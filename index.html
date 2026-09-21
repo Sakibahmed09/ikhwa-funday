@@ -91,47 +91,56 @@
 
       <section id="step-pay" class="hidden">
         <h2>Last step: pay</h2>
-        <p class="sub">Send a bank transfer from your banking app. Your place is held until then.</p>
+        <p class="sub">Your place is held. Pay to confirm it.</p>
 
         <div class="paybox">
           <div class="payrow big">
-            <span>Amount to send</span>
+            <span>Amount to pay</span>
             <strong id="p-amount"></strong>
           </div>
-          <div class="payrow">
-            <span>Account name</span>
-            <strong id="b-name"></strong>
-            <button type="button" class="copy" data-copy="b-name">Copy</button>
-          </div>
-          <div class="payrow">
-            <span>Bank</span>
-            <strong id="b-bank"></strong>
-          </div>
-          <div class="payrow">
-            <span>Sort code</span>
-            <strong id="b-sort"></strong>
-            <button type="button" class="copy" data-copy="b-sort">Copy</button>
-          </div>
-          <div class="payrow">
-            <span>Account number</span>
-            <strong id="b-acc"></strong>
-            <button type="button" class="copy" data-copy="b-acc">Copy</button>
-          </div>
           <div class="payrow ref-row">
-            <span>Reference<em>This is how we find your booking</em></span>
-            <strong id="p-ref"></strong>
-            <button type="button" class="copy" data-copy="p-ref">Copy</button>
+            <span>On the next page<em>Set the quantity to this number</em></span>
+            <strong id="p-qty"></strong>
           </div>
         </div>
 
-        <ol class="steps">
-          <li><strong>Open your banking app</strong>Make a normal payment to a new person or business.</li>
-          <li><strong>Use the details above</strong>Copy them across one by one.</li>
-          <li><strong>Put <span class="ref" id="p-ref2"></span> in the reference box</strong>Your app might call it "reference", "payment reference" or "what's this for". Without it we can't tell whose money is whose.</li>
-          <li><strong>Come back and tap "I've sent it"</strong>That's it, you're done.</li>
-        </ol>
+        <button class="primary" id="card">Pay by card or Apple Pay</button>
+        <p class="fineprint">Secure payment by Stripe. You'll come straight back here for your ticket.</p>
 
-        <button class="primary" id="paid">I've sent it</button>
+        <details class="alt" id="bank-alt">
+          <summary>Prefer a bank transfer?</summary>
+
+          <div class="paybox">
+            <div class="payrow">
+              <span>Account name</span>
+              <strong id="b-name"></strong>
+              <button type="button" class="copy" data-copy="b-name">Copy</button>
+            </div>
+            <div class="payrow">
+              <span>Bank</span>
+              <strong id="b-bank"></strong>
+            </div>
+            <div class="payrow">
+              <span>Sort code</span>
+              <strong id="b-sort"></strong>
+              <button type="button" class="copy" data-copy="b-sort">Copy</button>
+            </div>
+            <div class="payrow">
+              <span>Account number</span>
+              <strong id="b-acc"></strong>
+              <button type="button" class="copy" data-copy="b-acc">Copy</button>
+            </div>
+            <div class="payrow ref-row">
+              <span>Reference<em>Put this in the reference box</em></span>
+              <strong id="p-ref"></strong>
+              <button type="button" class="copy" data-copy="p-ref">Copy</button>
+            </div>
+          </div>
+
+          <p class="alt-note">Your app might call the reference "payment reference" or "what's this for". Without it we can't tell whose money is whose.</p>
+          <button class="ghost" id="paid">I've sent the transfer</button>
+        </details>
+
         <button class="link" id="back">Go back and change my details</button>
       </section>
 

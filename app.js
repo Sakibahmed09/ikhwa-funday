@@ -154,7 +154,7 @@ $("reg").onsubmit = async (e) => {
   $("b-sort").textContent = E.bank.sortCode;
   $("b-acc").textContent = E.bank.accountNumber;
   $("p-ref").textContent = booking.ref;
-  $("p-ref2").textContent = booking.ref;
+  $("p-qty").textContent = booking.tickets;
   show("step-pay");
 };
 
@@ -179,12 +179,18 @@ document.querySelectorAll(".copy").forEach((btn) => {
 
 $("back").onclick = () => show("step-form");
 
-$("paid").onclick = () => {
-  booking.paid = "said yes";
-  booking.confirmedAt = new Date().toISOString();
-  record(booking);
+$("card").onclick = () => {
+  localStorage.setItem("pending", JSON.stringify(booking));
+  const url = new URL(E.stripeLink);
+  url.searchParams.set("client_reference_id", booking.ref);
+  url.searchParams.set("prefilled_email", booking.email);
+  window.location.href = url.toString();
+};
 
-  $("d-line").textContent = "Your place is held. We'll confirm once the transfer lands.";
+function ticket() {
+  $("d-line").textContent = booking.paid === "card"
+    ? "Payment received. You're all set."
+    : "Your place is held. We'll confirm once the transfer lands.";
   $("d-name").textContent = booking.name;
   $("d-people").textContent = people(booking.tickets);
   $("d-amount").textContent = money(booking.tickets * E.pricePence);
@@ -197,7 +203,29 @@ $("paid").onclick = () => {
   ].map((l) => `<li>${l}</li>`).join("");
   $("d-ref").textContent = booking.ref;
   show("step-done");
+}
+
+$("paid").onclick = () => {
+  booking.paid = "said yes (transfer)";
+  booking.confirmedAt = new Date().toISOString();
+  record(booking);
+  ticket();
 };
+
+function returnFromStripe() {
+  const session = new URLSearchParams(location.search).get("paid");
+  const pending = localStorage.getItem("pending");
+  if (!session || !pending) return;
+
+  booking = JSON.parse(pending);
+  booking.paid = "card";
+  booking.stripeSession = session;
+  booking.confirmedAt = new Date().toISOString();
+  record(booking);
+  localStorage.removeItem("pending");
+  history.replaceState(null, "", location.pathname);
+  ticket();
+}
 
 $("another").onclick = () => {
   $("reg").reset();
@@ -209,3 +237,4 @@ $("another").onclick = () => {
 };
 
 paint();
+returnFromStripe();
