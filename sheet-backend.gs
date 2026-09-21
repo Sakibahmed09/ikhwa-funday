@@ -1,36 +1,22 @@
-// Paste this into Extensions > Apps Script on the bookings Google Sheet,
-// then Deploy > New deployment > Web app > Execute as me > Anyone has access.
-// Copy the /exec URL into sheetEndpoint in event.config.js.
+// Paste into Extensions > Apps Script on the bookings sheet.
+// Deploy > Manage deployments > edit > New version, so the /exec URL stays the same.
+// Project Settings > Script properties: STRIPE_KEY = a restricted key with
+// "Checkout Sessions: Write" only.
 
-const HEADERS = [
-  "ref", "registeredAt", "event", "name", "email", "phone",
-  "tickets", "amount", "heardAbout", "paid", "confirmedAt",
-];
+function setup() { return UrlFetchApp.fetch("https://api.stripe.com/v1/", { muteHttpExceptions: true }).getResponseCode(); }
 
-function doPost(e) {
-  const row = JSON.parse(e.postData.contents);
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
+var HEADERS = ["ref", "registeredAt", "event", "name", "email", "phone", "tickets", "amount", "heardAbout", "paid", "confirmedAt", "stripeSession"];
+var PRICE = "price_1UICNcRbS3vGEM13fsjBuRCJ";
+var SITE = "https://sakib.lol/ikhwa-funday/";
 
-  if (sheet.getLastRow() === 0) {
-    sheet.appendRow(HEADERS);
-    sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight("bold");
-    sheet.setFrozenRows(1);
-  }
+function sheet_() { var s = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0]; if (s.getLastRow() === 0) { s.appendRow(HEADERS); s.getRange(1, 1, 1, HEADERS.length).setFontWeight("bold"); s.setFrozenRows(1); } else if (s.getLastColumn() < HEADERS.length) { s.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]).setFontWeight("bold"); } return s; }
 
-  const refs = sheet.getRange(2, 1, Math.max(sheet.getLastRow() - 1, 1), 1).getValues();
-  const existing = refs.findIndex((r) => r[0] === row.ref);
-  const values = HEADERS.map((h) => row[h] || "");
+function save_(row) { var s = sheet_(); var refs = s.getRange(2, 1, Math.max(s.getLastRow() - 1, 1), 1).getValues(); var at = -1; for (var i = 0; i < refs.length; i++) { if (refs[i][0] === row.ref) { at = i; } } var old = at >= 0 ? s.getRange(at + 2, 1, 1, HEADERS.length).getValues()[0] : []; var values = HEADERS.map(function (h, j) { return row[h] !== undefined && row[h] !== "" ? row[h] : (old[j] || ""); }); if (at >= 0) { s.getRange(at + 2, 1, 1, HEADERS.length).setValues([values]); } else { s.appendRow(values); } }
 
-  if (existing >= 0) {
-    sheet.getRange(existing + 2, 1, 1, HEADERS.length).setValues([values]);
-  } else {
-    sheet.appendRow(values);
-  }
+function stripe_(method, path, params) { var key = PropertiesService.getScriptProperties().getProperty("STRIPE_KEY"); var opts = { method: method, headers: { Authorization: "Bearer " + key }, muteHttpExceptions: true }; if (params) { opts.payload = params; } return JSON.parse(UrlFetchApp.fetch("https://api.stripe.com/v1/" + path, opts).getContentText()); }
 
-  return ContentService.createTextOutput(JSON.stringify({ ok: true }))
-    .setMimeType(ContentService.MimeType.JSON);
-}
+function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 
-function doGet() {
-  return ContentService.createTextOutput("ok");
-}
+function doPost(e) { var body = JSON.parse(e.postData.contents); if (body.action === "checkout") { var q = Math.max(1, Math.min(12, parseInt(body.tickets, 10) || 1)); var r = stripe_("post", "checkout/sessions", { "mode": "payment", "line_items[0][price]": PRICE, "line_items[0][quantity]": String(q), "customer_email": body.email, "client_reference_id": body.ref, "success_url": SITE + "?paid={CHECKOUT_SESSION_ID}", "cancel_url": SITE + "?cancelled=" + body.ref }); return out_({ url: r.url || null, error: r.error ? r.error.message : null }); } if (body.action === "confirm") { var c = stripe_("get", "checkout/sessions/" + encodeURIComponent(body.session)); var ok = c.payment_status === "paid"; if (ok) { save_({ ref: c.client_reference_id, paid: "card (verified)", confirmedAt: new Date().toISOString(), stripeSession: c.id }); } return out_({ paid: ok, ref: c.client_reference_id || null }); } save_(body); return out_({ ok: true }); }
+
+function doGet(e) { return ContentService.createTextOutput("ok"); }

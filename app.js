@@ -148,15 +148,19 @@ $("reg").onsubmit = async (e) => {
 
   record(booking);
 
-  $("p-amount").textContent = money(tickets * E.pricePence);
+  fillPay();
+  show("step-pay");
+};
+
+function fillPay() {
+  $("p-amount").textContent = money(booking.tickets * E.pricePence);
+  $("p-qty").textContent = people(booking.tickets);
   $("b-name").textContent = E.bank.accountName;
   $("b-bank").textContent = E.bank.bankName;
   $("b-sort").textContent = E.bank.sortCode;
   $("b-acc").textContent = E.bank.accountNumber;
   $("p-ref").textContent = booking.ref;
-  $("p-qty").textContent = booking.tickets;
-  show("step-pay");
-};
+}
 
 document.querySelectorAll(".copy").forEach((btn) => {
   btn.onclick = async () => {
@@ -179,12 +183,37 @@ document.querySelectorAll(".copy").forEach((btn) => {
 
 $("back").onclick = () => show("step-form");
 
-$("card").onclick = () => {
-  localStorage.setItem("pending", JSON.stringify(booking));
+async function api(body) {
+  const res = await fetch(E.sheetEndpoint, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(body),
+  });
+  return res.json();
+}
+
+function fallbackLink() {
   const url = new URL(E.stripeLink);
   url.searchParams.set("client_reference_id", booking.ref);
   url.searchParams.set("prefilled_email", booking.email);
-  window.location.href = url.toString();
+  return url.toString();
+}
+
+$("card").onclick = async () => {
+  localStorage.setItem("pending", JSON.stringify(booking));
+  $("card").disabled = true;
+  $("card").textContent = "Opening secure checkout…";
+  try {
+    const r = await api({ action: "checkout", ref: booking.ref, tickets: booking.tickets, email: booking.email });
+    if (!r.url) throw new Error(r.error || "no checkout");
+    window.location.href = r.url;
+  } catch (e) {
+    $("pay-note").textContent = `On the next page, set the quantity to ${booking.tickets}.`;
+    $("pay-note").hidden = false;
+    $("card").disabled = false;
+    $("card").textContent = "Continue to payment";
+    $("card").onclick = () => { window.location.href = fallbackLink(); };
+  }
 };
 
 function ticket() {
@@ -212,29 +241,37 @@ $("paid").onclick = () => {
   ticket();
 };
 
-function returnFromStripe() {
-  const session = new URLSearchParams(location.search).get("paid");
+async function returnFromStripe() {
+  const params = new URLSearchParams(location.search);
+  const session = params.get("paid");
+  const cancelled = params.get("cancelled");
   const pending = localStorage.getItem("pending");
-  if (!session || !pending) return;
+  if ((!session && !cancelled) || !pending) return;
 
   booking = JSON.parse(pending);
-  booking.paid = "card";
+  history.replaceState(null, "", location.pathname);
+
+  if (cancelled) {
+    fillPay();
+    $("pay-note").textContent = "Payment wasn't completed. Your place is still held, try again when you're ready.";
+    $("pay-note").hidden = false;
+    show("step-pay");
+    return;
+  }
+
+  let verified = false;
+  try {
+    const r = await api({ action: "confirm", session });
+    verified = r.paid === true;
+  } catch (e) {}
+
+  booking.paid = verified ? "card" : "card (unverified)";
   booking.stripeSession = session;
   booking.confirmedAt = new Date().toISOString();
-  record(booking);
+  if (!verified) record(booking);
   localStorage.removeItem("pending");
-  history.replaceState(null, "", location.pathname);
   ticket();
 }
-
-$("another").onclick = () => {
-  $("reg").reset();
-  showErrors = false;
-  document.querySelectorAll(".field.err").forEach((f) => f.classList.remove("err"));
-  setTickets(1);
-  show("step-form");
-  $("name").focus();
-};
 
 paint();
 returnFromStripe();
