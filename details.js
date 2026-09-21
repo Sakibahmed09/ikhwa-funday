@@ -11,7 +11,7 @@ window.EVENT = {
   mapsUrl: "https://maps.google.com/?q=London+Marathon+Community+Track+E20+2AE",
   notes: ["Segregated facilities for sisters", "Free parking"],
 
-  poster: "assets/poster.jpg",
+  poster: "assets/poster.jpg?v=2",
 
   pricePence: 500,
   priceLabel: "£5 per person",
