@@ -247,12 +247,12 @@ async function returnFromStripe() {
   const session = params.get("paid");
   const cancelled = params.get("cancelled");
   const pending = localStorage.getItem("pending");
-  if ((!session && !cancelled) || !pending) return;
-
-  booking = JSON.parse(pending);
+  if (!session && !cancelled) return;
   history.replaceState(null, "", location.pathname);
 
   if (cancelled) {
+    if (!pending) return;
+    booking = JSON.parse(pending);
     fillPay();
     $("pay-note").textContent = "Payment wasn't completed. Your place is still held, try again when you're ready.";
     $("pay-note").hidden = false;
@@ -260,16 +260,23 @@ async function returnFromStripe() {
     return;
   }
 
-  let verified = false;
+  let r = {};
   try {
-    const r = await api({ action: "confirm", session });
-    verified = r.paid === true;
+    r = await api({ action: "confirm", session });
   } catch (e) {}
 
-  booking.paid = verified ? "card" : "card (unverified)";
+  if (pending) {
+    booking = JSON.parse(pending);
+  } else if (r.paid) {
+    booking = { ref: r.ref, name: r.name || "", email: r.email || "", tickets: Math.round(r.amount / E.pricePence) };
+  } else {
+    return;
+  }
+
+  booking.paid = r.paid ? "card" : "card (unverified)";
   booking.stripeSession = session;
   booking.confirmedAt = new Date().toISOString();
-  if (!verified) record(booking);
+  if (!r.paid) record(booking);
   localStorage.removeItem("pending");
   ticket();
 }
