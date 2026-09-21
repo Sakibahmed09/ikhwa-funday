@@ -11,7 +11,8 @@ let showErrors = false;
 function paint() {
   document.title = `${E.name} — ${E.org}`;
   $("org").textContent = `${E.org} presents`;
-  $("ev-name").textContent = E.name;
+  const [first, ...rest] = E.name.split(" ");
+  $("ev-name").innerHTML = `<span>${first}</span>${rest.join(" ")}`;
   $("tagline").textContent = E.tagline;
 
   $("f-date").textContent = E.date;
@@ -229,7 +230,6 @@ function ticket() {
   $("d-when").textContent = `${E.date}, ${E.time}`;
   $("d-where").textContent = E.venue;
   $("next").innerHTML = [
-    `<strong>This screen is your ticket.</strong> Screenshot it and show it at the door.`,
     `Your code is how we find your payment, so keep it.`,
     E.notes.join(" · ") + ".",
   ].map((l) => `<li>${l}</li>`).join("");
