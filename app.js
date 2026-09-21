@@ -7,7 +7,7 @@ const people = (n) => (n === 1 ? "1 person" : `${n} people`);
 let adults = [{ gender: "", age: "" }];
 let kids = [];
 
-const isFree = (p) => p.age !== "" && Number(p.age) < E.freeUnderAge;
+const isFree = (p) => p.age === E.childAges[0];
 const paying = () => adults.length + kids.filter((k) => !isFree(k)).length;
 const freeCount = () => kids.filter(isFree).length;
 
@@ -93,9 +93,7 @@ function setCounts(a, c) {
 
 function personRow(p, kind, i) {
   const genders = kind === "adult" ? ["Male", "Female"] : ["Boy", "Girl"];
-  const ages = kind === "adult"
-    ? Array.from({ length: 82 }, (_, n) => n + 18)
-    : Array.from({ length: 18 }, (_, n) => n);
+  const ages = kind === "adult" ? E.adultAges : E.childAges;
   const label = `${kind === "adult" ? "Adult" : "Child"} ${i + 1}`;
   const free = kind === "child" && isFree(p) ? `<em class="free-tag">Free</em>` : "";
   return `
@@ -106,7 +104,7 @@ function personRow(p, kind, i) {
       </div>
       <select aria-label="${label}: age" id="${kind}-age-${i}">
         <option value="">Age</option>
-        ${ages.map((n) => `<option value="${n}"${String(p.age) === String(n) ? " selected" : ""}>${n === 0 ? "Under 1" : n === 99 ? "99+" : n}</option>`).join("")}
+        ${ages.map((n) => `<option value="${n}"${p.age === n ? " selected" : ""}>${n}</option>`).join("")}
       </select>
     </div>`;
 }
@@ -232,7 +230,7 @@ $("reg").onsubmit = async (e) => {
     under5: freeCount(),
     attendees: [
       ...adults.map((p) => `${p.gender} ${p.age}`),
-      ...kids.map((p) => `${p.gender} ${p.age === "0" ? "under 1" : p.age}${isFree(p) ? " (free)" : ""}`),
+      ...kids.map((p) => `${p.gender} ${p.age}${isFree(p) ? " (free)" : ""}`),
     ].join("; "),
     amount: (paying() * E.pricePence) / 100,
     heardAbout: E.fields.heardAbout ? $("heard").value : "",

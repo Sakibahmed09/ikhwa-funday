@@ -480,7 +480,7 @@ footer a:hover { text-decoration: underline; }
 
 .person {
   display: grid;
-  grid-template-columns: 92px 1fr 92px;
+  grid-template-columns: 92px 1fr 104px;
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
@@ -527,6 +527,6 @@ footer a:hover { text-decoration: underline; }
 #t-free { color: var(--mustard); }
 
 @media (max-width: 420px) {
-  .person { grid-template-columns: 1fr 88px; }
+  .person { grid-template-columns: 1fr 104px; }
   .person-n { grid-column: 1 / -1; }
 }

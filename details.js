@@ -17,6 +17,8 @@ window.EVENT = {
   priceLabel: "£5 per person",
   priceNote: "Under 5s go free",
   freeUnderAge: 5,
+  childAges: ["Under 5", "5–8", "9–12", "13–17"],
+  adultAges: ["18–24", "25–34", "35–44", "45–54", "55+"],
   maxTicketsPerBooking: 12,
   capacity: 200,
 
