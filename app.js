@@ -4,9 +4,20 @@ const $ = (id) => document.getElementById(id);
 const money = (p) => "£" + (p / 100).toFixed(2).replace(/\.00$/, "");
 const people = (n) => (n === 1 ? "1 person" : `${n} people`);
 
-let tickets = 1;
-let booking = null;
-let showErrors = false;
+let adults = [{ gender: "", age: "" }];
+let kids = [];
+
+const isFree = (p) => p.age !== "" && Number(p.age) < E.freeUnderAge;
+const paying = () => adults.length + kids.filter((k) => !isFree(k)).length;
+const freeCount = () => kids.filter(isFree).length;
+
+const party = (b) => {
+  if (b.adults === undefined) return people(b.tickets);
+  const parts = [`${b.adults} ${b.adults === 1 ? "adult" : "adults"}`];
+  if (b.children) parts.push(`${b.children} ${b.children === 1 ? "child" : "children"}`);
+  const s = parts.join(", ");
+  return b.under5 ? `${s} (${b.under5} under ${E.freeUnderAge} free)` : s;
+};
 
 function paint() {
   document.title = `${E.name} — ${E.org}`;
@@ -14,6 +25,7 @@ function paint() {
   const [first, ...rest] = E.name.split(" ");
   $("ev-name").innerHTML = `<span>${first}</span>${rest.join(" ")}`;
   $("tagline").textContent = E.tagline;
+  $("price-hint").textContent = `${E.priceLabel}. ${E.priceNote}.`;
 
   $("f-date").textContent = E.date;
   $("f-time").textContent = E.time;
@@ -45,23 +57,88 @@ function paint() {
     c.whatsapp && `<a href="${c.whatsapp}">WhatsApp</a>`,
   ].filter(Boolean).join("");
 
+  renderPeople();
   total();
 }
 
 function total() {
-  $("t-count").textContent = people(tickets);
-  $("t-each").textContent = money(E.pricePence);
-  $("t-total").textContent = money(tickets * E.pricePence);
-  $("submit").textContent = `Continue to pay ${money(tickets * E.pricePence)}`;
-  $("minus").disabled = tickets <= 1;
-  $("plus").disabled = tickets >= E.maxTicketsPerBooking;
-  $("tickets").value = tickets;
+  const n = adults.length + kids.length;
+  const pay = paying();
+  const free = freeCount();
+  $("t-count").textContent = party({ adults: adults.length, children: kids.length });
+  $("t-free").textContent = free ? ` · ${free} under ${E.freeUnderAge} free` : "";
+  $("t-total").textContent = money(pay * E.pricePence);
+  $("submit").textContent = `Continue to pay ${money(pay * E.pricePence)}`;
+  $("a-minus").disabled = adults.length <= 1;
+  $("c-minus").disabled = kids.length === 0;
+  $("a-plus").disabled = $("c-plus").disabled = n >= E.maxTicketsPerBooking;
+  $("adults").value = adults.length;
+  $("children").value = kids.length;
 }
 
-function setTickets(n) {
-  tickets = Math.min(E.maxTicketsPerBooking, Math.max(1, n || 1));
+function resize(list, n) {
+  while (list.length < n) list.push({ gender: "", age: "" });
+  list.length = n;
+}
+
+function setCounts(a, c) {
+  const max = E.maxTicketsPerBooking;
+  a = Math.min(max, Math.max(1, a || 1));
+  c = Math.min(max - a, Math.max(0, c || 0));
+  resize(adults, a);
+  resize(kids, c);
+  renderPeople();
   total();
 }
+
+function personRow(p, kind, i) {
+  const genders = kind === "adult" ? ["Male", "Female"] : ["Boy", "Girl"];
+  const ages = kind === "adult"
+    ? Array.from({ length: 82 }, (_, n) => n + 18)
+    : Array.from({ length: 18 }, (_, n) => n);
+  const label = `${kind === "adult" ? "Adult" : "Child"} ${i + 1}`;
+  const free = kind === "child" && isFree(p) ? `<em class="free-tag">Free</em>` : "";
+  return `
+    <div class="person" data-kind="${kind}" data-i="${i}">
+      <span class="person-n">${label}${free}</span>
+      <div class="seg" role="group" aria-label="${label}: gender">
+        ${genders.map((g) => `<button type="button" data-g="${g}" aria-pressed="${p.gender === g}">${g}</button>`).join("")}
+      </div>
+      <select aria-label="${label}: age" id="${kind}-age-${i}">
+        <option value="">Age</option>
+        ${ages.map((n) => `<option value="${n}"${String(p.age) === String(n) ? " selected" : ""}>${n === 0 ? "Under 1" : n === 99 ? "99+" : n}</option>`).join("")}
+      </select>
+    </div>`;
+}
+
+function renderPeople() {
+  $("people").innerHTML =
+    adults.map((p, i) => personRow(p, "adult", i)).join("") +
+    kids.map((p, i) => personRow(p, "child", i)).join("");
+}
+
+const listFor = (row) => (row.dataset.kind === "adult" ? adults : kids);
+
+$("people").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-g]");
+  if (!b) return;
+  const row = b.closest(".person");
+  listFor(row)[+row.dataset.i].gender = b.dataset.g;
+  b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b));
+  if (showErrors) check();
+});
+
+$("people").addEventListener("change", (e) => {
+  if (e.target.tagName !== "SELECT") return;
+  const row = e.target.closest(".person");
+  listFor(row)[+row.dataset.i].age = e.target.value;
+  const tag = row.querySelector(".free-tag");
+  const free = row.dataset.kind === "child" && isFree({ age: e.target.value });
+  if (free && !tag) row.querySelector(".person-n").insertAdjacentHTML("beforeend", `<em class="free-tag">Free</em>`);
+  if (!free && tag) tag.remove();
+  total();
+  if (showErrors) check();
+});
 
 function reference() {
   return `${E.refPrefix}-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -71,7 +148,8 @@ function check() {
   const rules = [
     ["w-name", $("name").value.trim().length >= 2],
     ["w-email", /^\S+@\S+\.\S+$/.test($("email").value.trim())],
-    ["w-tickets", tickets >= 1],
+    ["w-tickets", adults.length >= 1],
+    ["w-people", [...adults, ...kids].every((p) => p.gender && p.age !== "")],
   ];
   if (E.fields.phone) {
     rules.push(["w-phone", $("phone").value.replace(/\D/g, "").length >= 10]);
@@ -114,11 +192,17 @@ function show(step) {
   $("booking").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-$("minus").onclick = () => setTickets(tickets - 1);
-$("plus").onclick = () => setTickets(tickets + 1);
-$("tickets").oninput = (e) => {
+$("a-minus").onclick = () => setCounts(adults.length - 1, kids.length);
+$("a-plus").onclick = () => setCounts(adults.length + 1, kids.length);
+$("c-minus").onclick = () => setCounts(adults.length, kids.length - 1);
+$("c-plus").onclick = () => setCounts(adults.length, kids.length + 1);
+$("adults").oninput = (e) => {
   const n = parseInt(e.target.value.replace(/\D/g, ""), 10);
-  if (!isNaN(n)) setTickets(n);
+  if (!isNaN(n)) setCounts(n, kids.length);
+};
+$("children").oninput = (e) => {
+  const n = parseInt(e.target.value.replace(/\D/g, ""), 10);
+  if (!isNaN(n)) setCounts(adults.length, n);
 };
 
 ["name", "email", "phone"].forEach((id) => {
@@ -132,7 +216,7 @@ $("reg").onsubmit = async (e) => {
   e.preventDefault();
   showErrors = true;
   if (!check()) {
-    document.querySelector(".field.err input")?.focus();
+    document.querySelector(".field.err input, .field.err select, .field.err button")?.focus();
     return;
   }
 
@@ -142,8 +226,15 @@ $("reg").onsubmit = async (e) => {
     name: $("name").value.trim(),
     email: $("email").value.trim(),
     phone: E.fields.phone ? $("phone").value.trim() : "",
-    tickets: tickets,
-    amount: (tickets * E.pricePence) / 100,
+    tickets: paying(),
+    adults: adults.length,
+    children: kids.length,
+    under5: freeCount(),
+    attendees: [
+      ...adults.map((p) => `${p.gender} ${p.age}`),
+      ...kids.map((p) => `${p.gender} ${p.age === "0" ? "under 1" : p.age}${isFree(p) ? " (free)" : ""}`),
+    ].join("; "),
+    amount: (paying() * E.pricePence) / 100,
     heardAbout: E.fields.heardAbout ? $("heard").value : "",
     paid: "no",
     registeredAt: new Date().toISOString(),
@@ -157,7 +248,7 @@ $("reg").onsubmit = async (e) => {
 
 function fillPay() {
   $("p-amount").textContent = money(booking.tickets * E.pricePence);
-  $("p-qty").textContent = people(booking.tickets);
+  $("p-qty").textContent = party(booking);
   $("b-name").textContent = E.bank.accountName;
   $("b-bank").textContent = E.bank.bankName;
   $("b-sort").textContent = E.bank.sortCode;
@@ -185,6 +276,17 @@ document.querySelectorAll(".copy").forEach((btn) => {
 });
 
 $("back").onclick = () => show("step-form");
+
+$("another").onclick = () => {
+  $("reg").reset();
+  showErrors = false;
+  document.querySelectorAll(".field.err").forEach((f) => f.classList.remove("err"));
+  adults = [];
+  kids = [];
+  setCounts(1, 0);
+  show("step-form");
+  $("name").focus();
+};
 
 async function api(body) {
   const res = await fetch(E.sheetEndpoint, {
@@ -226,7 +328,7 @@ function ticket() {
     "card (unverified)": "Your place is held. We're just confirming your payment with the bank.",
   }[booking.paid] || "Your place is held. We'll confirm once the transfer lands.";
   $("d-name").textContent = booking.name;
-  $("d-people").textContent = people(booking.tickets);
+  $("d-people").textContent = party(booking);
   $("d-amount").textContent = money(booking.tickets * E.pricePence);
   $("d-when").textContent = `${E.date}, ${E.time}`;
   $("d-where").textContent = E.venue;

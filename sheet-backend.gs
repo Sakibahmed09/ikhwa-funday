@@ -5,7 +5,7 @@
 
 function setup() { return UrlFetchApp.fetch("https://api.stripe.com/v1/", { muteHttpExceptions: true }).getResponseCode(); }
 
-var HEADERS = ["ref", "registeredAt", "event", "name", "email", "phone", "tickets", "amount", "heardAbout", "paid", "confirmedAt", "stripeSession"];
+var HEADERS = ["ref", "registeredAt", "event", "name", "email", "phone", "tickets", "amount", "heardAbout", "paid", "confirmedAt", "stripeSession", "adults", "children", "under5", "attendees"];
 var PRICE = "price_1UICNcRbS3vGEM13fsjBuRCJ";
 var SITE = "https://sakib.lol/ikhwa-funday/";
 

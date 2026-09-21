@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=13">
+<link rel="stylesheet" href="styles.css?v=15">
 </head>
 <body>
 
@@ -65,13 +65,34 @@
           </div>
 
           <div class="field" id="w-tickets">
-            <label for="tickets">How many people are coming?</label>
-            <div class="stepper">
-              <button type="button" id="minus" aria-label="One fewer person">−</button>
-              <input id="tickets" inputmode="numeric" value="1" aria-label="Number of people">
-              <button type="button" id="plus" aria-label="One more person">+</button>
+            <label>Who's coming?</label>
+            <div class="hint" id="price-hint"></div>
+
+            <div class="count-row">
+              <span class="count-label">Adults</span>
+              <div class="stepper">
+                <button type="button" id="a-minus" aria-label="One fewer adult">−</button>
+                <input id="adults" inputmode="numeric" value="1" aria-label="Number of adults">
+                <button type="button" id="a-plus" aria-label="One more adult">+</button>
+              </div>
             </div>
-            <div class="msg">Please choose at least one person.</div>
+
+            <div class="count-row">
+              <span class="count-label">Children</span>
+              <div class="stepper">
+                <button type="button" id="c-minus" aria-label="One fewer child">−</button>
+                <input id="children" inputmode="numeric" value="0" aria-label="Number of children">
+                <button type="button" id="c-plus" aria-label="One more child">+</button>
+              </div>
+            </div>
+            <div class="msg">Every booking needs at least one adult.</div>
+          </div>
+
+          <div class="field" id="w-people">
+            <label>About everyone coming</label>
+            <div class="hint">So we can plan the right activities and spaces.</div>
+            <div id="people"></div>
+            <div class="msg">Please pick a gender and an age for everyone.</div>
           </div>
 
           <div class="field" id="w-heard">
@@ -80,7 +101,7 @@
           </div>
 
           <div class="total">
-            <span class="lbl"><span id="t-count"></span> × <span id="t-each"></span></span>
+            <span class="lbl"><span id="t-count"></span><span id="t-free"></span></span>
             <span class="amt" id="t-total"></span>
           </div>
 
@@ -180,7 +201,7 @@
   <div id="links"></div>
 </footer>
 
-<script src="details.js?v=13"></script>
-<script src="app.js?v=13"></script>
+<script src="details.js?v=15"></script>
+<script src="app.js?v=15"></script>
 </body>
 </html>
