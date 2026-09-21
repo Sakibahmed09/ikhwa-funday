@@ -207,7 +207,7 @@ $("card").onclick = async () => {
   $("card").disabled = true;
   $("card").textContent = "Opening secure checkout…";
   try {
-    const r = await api({ action: "checkout", ref: booking.ref, tickets: booking.tickets, email: booking.email });
+    const r = await api({ action: "checkout", ref: booking.ref, tickets: booking.tickets, email: booking.email, site: location.origin + location.pathname });
     if (!r.url) throw new Error(r.error || "no checkout");
     window.location.href = r.url;
   } catch (e) {
