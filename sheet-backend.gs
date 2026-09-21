@@ -11,7 +11,9 @@ var SITE = "https://sakib.lol/ikhwa-funday/";
 
 function sheet_() { var s = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0]; if (s.getLastRow() === 0) { s.appendRow(HEADERS); s.getRange(1, 1, 1, HEADERS.length).setFontWeight("bold"); s.setFrozenRows(1); } else if (s.getLastColumn() < HEADERS.length) { s.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]).setFontWeight("bold"); } return s; }
 
-function save_(row) { var s = sheet_(); var refs = s.getRange(2, 1, Math.max(s.getLastRow() - 1, 1), 1).getValues(); var at = -1; for (var i = 0; i < refs.length; i++) { if (refs[i][0] === row.ref) { at = i; } } var old = at >= 0 ? s.getRange(at + 2, 1, 1, HEADERS.length).getValues()[0] : []; var values = HEADERS.map(function (h, j) { return row[h] !== undefined && row[h] !== "" ? row[h] : (old[j] || ""); }); if (at >= 0) { s.getRange(at + 2, 1, 1, HEADERS.length).setValues([values]); } else { s.appendRow(values); } }
+function save_(row) { var lock = LockService.getScriptLock(); lock.waitLock(20000); try { save__(row); } finally { lock.releaseLock(); } }
+
+function save__(row) { var s = sheet_(); var refs = s.getRange(2, 1, Math.max(s.getLastRow() - 1, 1), 1).getValues(); var at = -1; for (var i = 0; i < refs.length; i++) { if (refs[i][0] === row.ref) { at = i; } } var old = at >= 0 ? s.getRange(at + 2, 1, 1, HEADERS.length).getValues()[0] : []; var values = HEADERS.map(function (h, j) { if (h === "paid" && row.paid === "no" && old[j] && old[j] !== "no") { return old[j]; } return row[h] !== undefined && row[h] !== "" ? row[h] : (old[j] || ""); }); if (at >= 0) { s.getRange(at + 2, 1, 1, HEADERS.length).setValues([values]); } else { s.appendRow(values); } }
 
 function stripe_(method, path, params) { var key = PropertiesService.getScriptProperties().getProperty("STRIPE_KEY"); var opts = { method: method, headers: { Authorization: "Bearer " + key }, muteHttpExceptions: true }; if (params) { opts.payload = params; } return JSON.parse(UrlFetchApp.fetch("https://api.stripe.com/v1/" + path, opts).getContentText()); }
 

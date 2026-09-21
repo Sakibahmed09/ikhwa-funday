@@ -83,22 +83,24 @@ function check() {
   return ok;
 }
 
-async function record(row) {
+let queue = Promise.resolve();
+
+function record(row) {
   const saved = JSON.parse(localStorage.getItem("bookings") || "[]");
   saved.push(row);
   localStorage.setItem("bookings", JSON.stringify(saved));
 
-  if (!E.sheetEndpoint) return;
-  try {
-    await fetch(E.sheetEndpoint, {
+  if (!E.sheetEndpoint) return queue;
+  const body = JSON.stringify(row);
+  queue = queue
+    .then(() => fetch(E.sheetEndpoint, {
       method: "POST",
       mode: "no-cors",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(row),
-    });
-  } catch (e) {
-    /* the local copy above is the fallback */
-  }
+      body,
+    }))
+    .catch(() => {});
+  return queue;
 }
 
 function show(step) {
