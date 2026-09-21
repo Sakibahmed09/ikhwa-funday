@@ -217,9 +217,10 @@ $("card").onclick = async () => {
 };
 
 function ticket() {
-  $("d-line").textContent = booking.paid === "card"
-    ? "Payment received. You're all set."
-    : "Your place is held. We'll confirm once the transfer lands.";
+  $("d-line").textContent = {
+    card: "Payment received. You're all set.",
+    "card (unverified)": "Your place is held. We're just confirming your payment with the bank.",
+  }[booking.paid] || "Your place is held. We'll confirm once the transfer lands.";
   $("d-name").textContent = booking.name;
   $("d-people").textContent = people(booking.tickets);
   $("d-amount").textContent = money(booking.tickets * E.pricePence);
