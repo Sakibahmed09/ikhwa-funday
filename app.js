@@ -191,6 +191,7 @@ async function api(body) {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(12000),
   });
   return res.json();
 }
