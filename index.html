@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=19">
+<link rel="stylesheet" href="styles.css?v=20">
 </head>
 <body>
 
@@ -112,7 +112,7 @@
 
       <section id="step-pay" class="hidden">
         <h2>Last step: pay</h2>
-        <p class="sub">Your place is held. Pay to confirm it.</p>
+        <p class="sub">You're booked as soon as payment goes through.</p>
 
         <div class="paybox">
           <div class="payrow big">
@@ -129,39 +129,6 @@
         <button class="primary" id="card">Pay by card or Apple Pay</button>
         <p class="fineprint">Secure payment by Stripe. You'll come straight back here for your ticket.</p>
 
-        <details class="alt" id="bank-alt">
-          <summary>Prefer a bank transfer?</summary>
-
-          <div class="paybox">
-            <div class="payrow">
-              <span>Account name</span>
-              <strong id="b-name"></strong>
-              <button type="button" class="copy" data-copy="b-name">Copy</button>
-            </div>
-            <div class="payrow">
-              <span>Bank</span>
-              <strong id="b-bank"></strong>
-            </div>
-            <div class="payrow">
-              <span>Sort code</span>
-              <strong id="b-sort"></strong>
-              <button type="button" class="copy" data-copy="b-sort">Copy</button>
-            </div>
-            <div class="payrow">
-              <span>Account number</span>
-              <strong id="b-acc"></strong>
-              <button type="button" class="copy" data-copy="b-acc">Copy</button>
-            </div>
-            <div class="payrow ref-row">
-              <span>Reference<em>Put this in the reference box</em></span>
-              <strong id="p-ref"></strong>
-              <button type="button" class="copy" data-copy="p-ref">Copy</button>
-            </div>
-          </div>
-
-          <p class="alt-note">Your app might call the reference "payment reference" or "what's this for". Without it we can't tell whose money is whose.</p>
-          <button class="ghost" id="paid">I've sent the transfer</button>
-        </details>
 
         <button class="link" id="back">Go back and change my details</button>
       </section>
@@ -201,7 +168,7 @@
   <div id="links"></div>
 </footer>
 
-<script src="details.js?v=19"></script>
-<script src="app.js?v=19"></script>
+<script src="details.js?v=20"></script>
+<script src="app.js?v=20"></script>
 </body>
 </html>

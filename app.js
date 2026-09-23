@@ -160,26 +160,6 @@ function check() {
   return ok;
 }
 
-let queue = Promise.resolve();
-
-function record(row) {
-  const saved = JSON.parse(localStorage.getItem("bookings") || "[]");
-  saved.push(row);
-  localStorage.setItem("bookings", JSON.stringify(saved));
-
-  if (!E.sheetEndpoint) return queue;
-  const body = JSON.stringify(row);
-  queue = queue
-    .then(() => fetch(E.sheetEndpoint, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body,
-    }))
-    .catch(() => {});
-  return queue;
-}
-
 function show(step) {
   ["step-form", "step-pay", "step-done"].forEach((s) => $(s).classList.toggle("hidden", s !== step));
 
@@ -234,11 +214,8 @@ $("reg").onsubmit = async (e) => {
     ].join("; "),
     amount: (paying() * E.pricePence) / 100,
     heardAbout: E.fields.heardAbout ? $("heard").value : "",
-    paid: "no",
     registeredAt: new Date().toISOString(),
   };
-
-  record(booking);
 
   fillPay();
   show("step-pay");
@@ -247,31 +224,7 @@ $("reg").onsubmit = async (e) => {
 function fillPay() {
   $("p-amount").textContent = money(booking.tickets * E.pricePence);
   $("p-qty").textContent = party(booking);
-  $("b-name").textContent = E.bank.accountName;
-  $("b-bank").textContent = E.bank.bankName;
-  $("b-sort").textContent = E.bank.sortCode;
-  $("b-acc").textContent = E.bank.accountNumber;
-  $("p-ref").textContent = booking.ref;
 }
-
-document.querySelectorAll(".copy").forEach((btn) => {
-  btn.onclick = async () => {
-    const text = $(btn.dataset.copy).textContent.replace(/[-\s]/g, "");
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch (e) {
-      const t = document.createElement("textarea");
-      t.value = text;
-      document.body.appendChild(t);
-      t.select();
-      document.execCommand("copy");
-      t.remove();
-    }
-    btn.textContent = "Copied";
-    btn.classList.add("ok");
-    setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("ok"); }, 1600);
-  };
-});
 
 $("back").onclick = () => show("step-form");
 
@@ -286,15 +239,18 @@ $("another").onclick = () => {
   $("name").focus();
 };
 
-async function api(body) {
+async function api(body, ms = 15000) {
   const res = await fetch(E.sheetEndpoint, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(12000),
+    signal: AbortSignal.timeout(ms),
   });
   return res.json();
 }
+
+const DETAILS = ["name", "phone", "heardAbout", "adults", "children", "under5", "attendees", "registeredAt"];
+const details = (b) => Object.fromEntries(DETAILS.map((k) => [k, b[k]]));
 
 function fallbackLink() {
   const url = new URL(E.stripeLink);
@@ -308,7 +264,7 @@ $("card").onclick = async () => {
   $("card").disabled = true;
   $("card").textContent = "Opening secure checkout…";
   try {
-    const r = await api({ action: "checkout", ref: booking.ref, tickets: booking.tickets, email: booking.email, site: location.origin + location.pathname });
+    const r = await api({ action: "checkout", ref: booking.ref, tickets: booking.tickets, email: booking.email, site: location.origin + location.pathname, ...details(booking) });
     if (!r.url) throw new Error(r.error || "no checkout");
     window.location.href = r.url;
   } catch (e) {
@@ -321,29 +277,21 @@ $("card").onclick = async () => {
 };
 
 function ticket() {
-  $("d-line").textContent = {
-    card: "Payment received. You're all set.",
-    "card (unverified)": "Your place is held. We're just confirming your payment with the bank.",
-  }[booking.paid] || "Your place is held. We'll confirm once the transfer lands.";
+  $("d-line").textContent = booking.paid === "card"
+    ? "Payment received. You're all set."
+    : "Payment received. We're just finishing the paperwork, nothing more for you to do.";
   $("d-name").textContent = booking.name;
   $("d-people").textContent = party(booking);
   $("d-amount").textContent = money(booking.tickets * E.pricePence);
   $("d-when").textContent = `${E.date}, ${E.time}`;
   $("d-where").textContent = E.venue;
   $("next").innerHTML = [
-    `Your code is how we find your payment, so keep it.`,
+    `Your code is how we find your booking, so keep it.`,
     E.notes.join(" · ") + ".",
   ].map((l) => `<li>${l}</li>`).join("");
   $("d-ref").textContent = booking.ref;
   show("step-done");
 }
-
-$("paid").onclick = () => {
-  booking.paid = "said yes (transfer)";
-  booking.confirmedAt = new Date().toISOString();
-  record(booking);
-  ticket();
-};
 
 async function returnFromStripe() {
   const params = new URLSearchParams(location.search);
@@ -357,29 +305,30 @@ async function returnFromStripe() {
     if (!pending) return;
     booking = JSON.parse(pending);
     fillPay();
-    $("pay-note").textContent = "Payment wasn't completed. Your place is still held, try again when you're ready.";
+    $("pay-note").textContent = "Payment wasn't completed, so you're not booked yet. Try again when you're ready.";
     $("pay-note").hidden = false;
     show("step-pay");
     return;
   }
 
+  const saved = pending ? JSON.parse(pending) : null;
   let r = {};
-  try {
-    r = await api({ action: "confirm", session });
-  } catch (e) {}
+  for (const ms of [15000, 25000]) {
+    try {
+      r = await api({ action: "confirm", session, booking: saved ? details(saved) : null }, ms);
+      break;
+    } catch (e) {}
+  }
 
-  if (pending) {
-    booking = JSON.parse(pending);
+  if (saved) {
+    booking = saved;
   } else if (r.paid) {
-    booking = { ref: r.ref, name: r.name || "", email: r.email || "", tickets: Math.round(r.amount / E.pricePence) };
+    booking = { ref: r.ref, name: r.name || "", email: r.email || "", tickets: Math.round(r.amount / E.pricePence), adults: r.adults ? +r.adults : undefined, children: r.children ? +r.children : 0, under5: r.under5 ? +r.under5 : 0 };
   } else {
     return;
   }
 
-  booking.paid = r.paid ? "card" : "card (unverified)";
-  booking.stripeSession = session;
-  booking.confirmedAt = new Date().toISOString();
-  if (!r.paid) record(booking);
+  booking.paid = r.paid ? "card" : "confirming";
   localStorage.removeItem("pending");
   ticket();
 }
