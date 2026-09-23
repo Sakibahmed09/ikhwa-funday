@@ -6,6 +6,7 @@ const people = (n) => (n === 1 ? "1 person" : `${n} people`);
 
 let adults = [{ gender: "", age: "" }];
 let womenLeft = null;
+let showErrors = false;
 const womenChosen = () => adults.filter((p) => p.gender === "Female").length;
 let kids = [];
 
