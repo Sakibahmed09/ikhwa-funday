@@ -5,6 +5,8 @@ const money = (p) => "£" + (p / 100).toFixed(2).replace(/\.00$/, "");
 const people = (n) => (n === 1 ? "1 person" : `${n} people`);
 
 let adults = [{ gender: "", age: "" }];
+let womenLeft = null;
+const womenChosen = () => adults.filter((p) => p.gender === "Female").length;
 let kids = [];
 
 const isFree = (p) => p.age === E.childAges[0];
@@ -100,7 +102,10 @@ function personRow(p, kind, i) {
     <div class="person" data-kind="${kind}" data-i="${i}">
       <span class="person-n">${label}${free}</span>
       <div class="seg" role="group" aria-label="${label}: gender">
-        ${genders.map((g) => `<button type="button" data-g="${g}" aria-pressed="${p.gender === g}">${g}</button>`).join("")}
+        ${genders.map((g) => {
+          const full = kind === "adult" && g === "Female" && womenLeft !== null && p.gender !== "Female" && womenChosen() >= womenLeft;
+          return `<button type="button" data-g="${g}" aria-pressed="${p.gender === g}"${full ? " disabled title=\"Sisters' places are full\"" : ""}>${g}</button>`;
+        }).join("")}
       </div>
       <select aria-label="${label}: age" id="${kind}-age-${i}">
         <option value="">Age</option>
@@ -122,7 +127,12 @@ $("people").addEventListener("click", (e) => {
   if (!b) return;
   const row = b.closest(".person");
   listFor(row)[+row.dataset.i].gender = b.dataset.g;
-  b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b));
+  if (row.dataset.kind === "adult" && womenLeft !== null) {
+    renderPeople();
+    showWomen();
+  } else {
+    b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b));
+  }
   if (showErrors) check();
 });
 
@@ -138,6 +148,27 @@ $("people").addEventListener("change", (e) => {
   if (showErrors) check();
 });
 
+function showWomen() {
+  const el = $("women-left");
+  if (womenLeft === null) { el.hidden = true; return; }
+  el.hidden = false;
+  el.textContent = womenLeft === 0
+    ? "Sisters' places are now full. Brothers and children can still book."
+    : `${womenLeft} ${womenLeft === 1 ? "place" : "places"} left for sisters (18+).`;
+  el.classList.toggle("full", womenLeft === 0);
+}
+
+async function loadAvailability() {
+  try {
+    const r = await (await fetch(`${E.sheetEndpoint}?action=availability`, { signal: AbortSignal.timeout(15000) })).json();
+    if (typeof r.womenLeft === "number") {
+      womenLeft = r.womenLeft;
+      renderPeople();
+      showWomen();
+    }
+  } catch (e) {}
+}
+
 function reference() {
   return `${E.refPrefix}-${Math.floor(1000 + Math.random() * 9000)}`;
 }
@@ -147,7 +178,7 @@ function check() {
     ["w-name", $("name").value.trim().length >= 2],
     ["w-email", /^\S+@\S+\.\S+$/.test($("email").value.trim())],
     ["w-tickets", adults.length >= 1],
-    ["w-people", [...adults, ...kids].every((p) => p.gender && p.age !== "")],
+    ["w-people", [...adults, ...kids].every((p) => p.gender && p.age !== "") && (womenLeft === null || womenChosen() <= womenLeft)],
   ];
   if (E.fields.phone) {
     rules.push(["w-phone", $("phone").value.replace(/\D/g, "").length >= 10]);
@@ -265,6 +296,17 @@ $("card").onclick = async () => {
   $("card").textContent = "Opening secure checkout…";
   try {
     const r = await api({ action: "checkout", ref: booking.ref, tickets: booking.tickets, email: booking.email, site: location.origin + location.pathname, ...details(booking) });
+    if (r.full) {
+      womenLeft = r.womenLeft;
+      renderPeople();
+      showWomen();
+      show("step-form");
+      showErrors = true;
+      check();
+      $("card").disabled = false;
+      $("card").textContent = "Pay by card or Apple Pay";
+      return;
+    }
     if (!r.url) throw new Error(r.error || "no checkout");
     window.location.href = r.url;
   } catch (e) {
@@ -335,3 +377,4 @@ async function returnFromStripe() {
 
 paint();
 returnFromStripe();
+loadAvailability();

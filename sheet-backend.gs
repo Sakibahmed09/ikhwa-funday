@@ -5,7 +5,16 @@
 var HEADERS = ["ref", "registeredAt", "event", "name", "email", "phone", "tickets", "amount", "heardAbout", "paid", "confirmedAt", "stripeSession", "adults", "children", "under5", "attendees"];
 var PRICE = "price_1UICNcRbS3vGEM13fsjBuRCJ";
 var SITE = "https://funday.ikhwa.co.uk/";
-var FIELDS = ["name", "phone", "heardAbout", "adults", "children", "under5", "attendees", "registeredAt"];
+var FIELDS = ["name", "phone", "heardAbout", "adults", "children", "under5", "attendees", "registeredAt", "women"];
+var WOMEN_CAP = 40;
+
+function womenIn_(attendees) { return (String(attendees || "").match(/(^|; )Female /g) || []).length; }
+
+function paidWomen_() { var s = sheet_(); if (s.getLastRow() < 2) { return 0; } var col = HEADERS.indexOf("attendees") + 1; return s.getRange(2, col, s.getLastRow() - 1, 1).getValues().reduce(function (n, r) { return n + womenIn_(r[0]); }, 0); }
+
+function heldWomen_(exceptRef) { var r = stripe_("get", "checkout/sessions?limit=100&status=open"); return (r.data || []).reduce(function (n, c) { var m = c.metadata || {}; return c.client_reference_id === exceptRef ? n : n + (parseInt(m.women, 10) || 0); }, 0); }
+
+function womenLeft_(exceptRef) { return Math.max(0, WOMEN_CAP - paidWomen_() - heldWomen_(exceptRef)); }
 
 function site_(s) { return /^https:\/\/(([a-z0-9-]+\.)?ikhwa\.co(\.uk)?|([a-z0-9-]+\.)?ikhwa-funday\.pages\.dev|sakib\.lol\/ikhwa-funday)\/$/.test(s || "") ? s : SITE; }
 
@@ -25,6 +34,6 @@ function sync() { var since = Math.floor(Date.now() / 1000) - 3 * 24 * 3600; var
 
 function installTrigger() { ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === "sync") { ScriptApp.deleteTrigger(t); } }); ScriptApp.newTrigger("sync").timeBased().everyMinutes(5).create(); sync(); return "sync every 5 minutes"; }
 
-function doPost(e) { var body = JSON.parse(e.postData.contents); if (body.action === "checkout") { var q = Math.max(1, Math.min(12, parseInt(body.tickets, 10) || 1)); var home = site_(body.site); var p = { "mode": "payment", "line_items[0][price]": PRICE, "line_items[0][quantity]": String(q), "customer_email": body.email, "client_reference_id": body.ref, "success_url": home + "?paid={CHECKOUT_SESSION_ID}", "cancel_url": home + "?cancelled=" + body.ref, "metadata[source]": "funday" }; FIELDS.forEach(function (f) { if (body[f] !== undefined && body[f] !== "") { p["metadata[" + f + "]"] = String(body[f]).slice(0, 490); } }); var r = stripe_("post", "checkout/sessions", p); return out_({ url: r.url || null, error: r.error ? r.error.message : null }); } if (body.action === "confirm") { var c = stripe_("get", "checkout/sessions/" + encodeURIComponent(body.session)); var ok = record_(c, body.booking); var cd = c.customer_details || {}; var m = c.metadata || {}; return out_({ paid: ok, ref: c.client_reference_id || null, name: m.name || cd.name || null, email: cd.email || null, amount: c.amount_total || 0, adults: m.adults || null, children: m.children || null, under5: m.under5 || null }); } return out_({ ok: false, error: "unpaid bookings are not stored" }); }
+function doPost(e) { var body = JSON.parse(e.postData.contents); if (body.action === "checkout") { var q = Math.max(1, Math.min(12, parseInt(body.tickets, 10) || 1)); var home = site_(body.site); var women = womenIn_(body.attendees); body.women = women; if (women > 0) { var left = womenLeft_(body.ref); if (women > left) { return out_({ url: null, full: true, womenLeft: left, error: "women cap" }); } } var p = { "mode": "payment", "line_items[0][price]": PRICE, "line_items[0][quantity]": String(q), "customer_email": body.email, "client_reference_id": body.ref, "success_url": home + "?paid={CHECKOUT_SESSION_ID}", "cancel_url": home + "?cancelled=" + body.ref, "metadata[source]": "funday", "expires_at": String(Math.floor(Date.now() / 1000) + 31 * 60) }; FIELDS.forEach(function (f) { if (body[f] !== undefined && body[f] !== "") { p["metadata[" + f + "]"] = String(body[f]).slice(0, 490); } }); var r = stripe_("post", "checkout/sessions", p); return out_({ url: r.url || null, error: r.error ? r.error.message : null }); } if (body.action === "confirm") { var c = stripe_("get", "checkout/sessions/" + encodeURIComponent(body.session)); var ok = record_(c, body.booking); var cd = c.customer_details || {}; var m = c.metadata || {}; return out_({ paid: ok, ref: c.client_reference_id || null, name: m.name || cd.name || null, email: cd.email || null, amount: c.amount_total || 0, adults: m.adults || null, children: m.children || null, under5: m.under5 || null }); } return out_({ ok: false, error: "unpaid bookings are not stored" }); }
 
-function doGet(e) { return ContentService.createTextOutput("ok"); }
+function doGet(e) { if (e && e.parameter && e.parameter.action === "availability") { return out_({ womenCap: WOMEN_CAP, womenLeft: womenLeft_(null) }); } return ContentService.createTextOutput("ok"); }
